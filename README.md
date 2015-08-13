@@ -8,11 +8,11 @@ Interactive documentation for the Lotame API is available at https://api.lotame.
 
 # Warnings
 
-* Generally speaking, the examples are just that, examples. They are not highly robust and secure application. As just one example of this, some will accept the API username and password on as command line arguments, but make no attempt to hide those from operating system process listings, etc...
+* Generally speaking, the examples are just that, examples. They are not highly robust and secure applications. As just one example of this, some will accept the API username and password as command line arguments, but make no attempt to hide those from operating system process listings, etc...
 * Depending on the configuration and completeness of your local environment you may see "InsecurePlatformWarning"'s when running these scripts, as all HTTP requests use SSL and require a fully functioning SSL environment via urllib3
 
 # License
 
-Copyright (c) 2016 Lotame Solutions, Inc.
+Copyright (c) 2015 Lotame Solutions, Inc.
 
 Published under The MIT License, see LICENSE

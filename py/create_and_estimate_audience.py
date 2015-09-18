@@ -35,12 +35,13 @@ nodeB = None
 nodeC = None
 for hierarchy in hierarchyList["hierarchies"]:
 	if nodeA == None and hierarchy["default"] == True:
-		# this is the standard hierarchy, grab the first two nodes for our A or B expression that we'll build later
+		# This is the standard hierarchy, grab the first two nodes for our A or B expression that we'll build later		
 		hierarchyMeta = lotame_utils.getRequest(args.user, args.pw, "https://api.lotame.com/2/hierarchies/" + hierarchy["id"] + "?depth=2&universe_id=1&client_id=" + args.clientid).json()
-		nodes = hierarchyMeta["nodes"]
-		if nodes != None:
-			nodeA = {"clientId":hierarchyMeta["ownerClientId"],"node":nodes[0]}
-			nodeB = {"clientId":hierarchyMeta["ownerClientId"],"node":nodes[1]}
+		if hierarchyMeta["purchasable"] == True:
+			nodes = hierarchyMeta["nodes"]
+			if nodes != None:
+				nodeA = {"clientId":hierarchyMeta["ownerClientId"],"node":nodes[0]}
+				nodeB = {"clientId":hierarchyMeta["ownerClientId"],"node":nodes[1]}
 	elif nodeC == None and hierarchy["hierarchyType"] == "BRANDED":
 		# this is the branded hierarchy, grab the first purchasable node for the C part of our expression.
 		hierarchyMeta = lotame_utils.getRequest(args.user, args.pw, "https://api.lotame.com/2/hierarchies/" + hierarchy["id"] + "?depth=2&universe_id=1&client_id=" + args.clientid).json()

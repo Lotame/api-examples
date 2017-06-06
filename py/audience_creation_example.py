@@ -58,7 +58,7 @@ def main():
         'clientId': client_id,
         'name': audience_name,
         'overlapOnly': True,  # True for Enrich, False for Extend
-        'generate_apr': True,  # Be sure to set whether APR should be enabled
+        'generate_apr': False,  # Be sure to set whether APR should be enabled
         'Client': {
             'id': client_id
         },

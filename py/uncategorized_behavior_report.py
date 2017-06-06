@@ -3,9 +3,9 @@
     Author: Brett Coker
     Python Version: 3.6.1
 
-    Generates an uncategorized beahvior report for IBM - Network and saves it
-    as a CSV file named uncategorized_behaviors.csv. The file is saved to the
-    directory where this script is run from.
+    Generates an uncategorized beahvior report and saves it as a CSV file
+    named uncategorized_behaviors.csv. The file is saved to the directory
+    where this script is run from.
 '''
 import requests
 import sys

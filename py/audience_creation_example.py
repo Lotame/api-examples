@@ -5,7 +5,7 @@
 
     An example of how to use the Lotame API to create a basic audience,
     consisting of two behaviors ANDed together. This script assumes that the
-    audience should be created on Enrich, with the APR enabled.
+    audience should be created on Enrich, with the APR disabled.
 '''
 import requests
 import sys

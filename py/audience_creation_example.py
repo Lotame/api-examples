@@ -32,13 +32,13 @@ def main():
     audience_name = input('New Audience Name: ')
 
     # Put the two behavior IDs in a list for future iteration
-    behavior_definitions = []
-    behavior_definitions.append(input('First Behavior ID: '))
-    behavior_definitions.append(input('Second Behavior ID: '))
+    behavior_ids = []
+    behavior_ids.append(input('First Behavior ID: '))
+    behavior_ids.append(input('Second Behavior ID: '))
 
     behaviors = []
     first_behavior = True
-    for behavior_id in behavior_definitions:
+    for behavior_id in behavior_ids:
         # We can't give the first behavior a relationship, because there's
         # nothing behind it that it can relate to
         if first_behavior:

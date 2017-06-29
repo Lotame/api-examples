@@ -32,13 +32,13 @@ def main():
     audience_name = input('New Audience Name: ')
 
     # Put the two behavior IDs in a list for future iteration
-    behaviors_ids = []
-    behaviors_ids.append(input('First Behavior ID: '))
-    behaviors_ids.append(input('Second Behavior ID: '))
+    behavior_definitions = []
+    behavior_definitions.append(input('First Behavior ID: '))
+    behavior_definitions.append(input('Second Behavior ID: '))
 
     behaviors = []
     first_behavior = True
-    for behavior_id in behaviors_ids:
+    for behavior_id in behavior_definitions:
         # We can't give the first behavior a relationship, because there's
         # nothing behind it that it can relate to
         if first_behavior:
@@ -51,7 +51,7 @@ def main():
 
         # Puts the behavior IDs into a JSON skeleton, preparing them to be
         # passed into the audience JSON
-        behavior = create_behavior_definition(tgt, behavior_id, relationship)
+        behavior = create_behavior_definition(behavior_id, relationship)
         behaviors.append(behavior)
 
     audience = {
@@ -82,7 +82,7 @@ def main():
     requests.delete(tgt)
 
 
-def create_behavior_definition(tgt, behavior_id, relationship):
+def create_behavior_definition(behavior_id, relationship):
     """Creates behavior definition from ID and relationship."""
     definition = {
         'operator': relationship,

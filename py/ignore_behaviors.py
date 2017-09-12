@@ -5,6 +5,15 @@
 
     Takes a .txt file containing behavior IDs (one per line) as an argument.
     Ignores those behaviors
+
+    it expects a config file in the same directory that is named config.cfg
+    and has the following content:
+    [api_examples]
+    authentication_url = https://crowdcontrol.lotame.com/auth/v1/tickets
+    api_url = https://api.lotame.com/2/
+    username = <your Lotame username>
+    password = <your Lotame password>
+
 '''
 import argparse
 import lotame_utils

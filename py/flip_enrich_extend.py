@@ -10,21 +10,14 @@
 '''
 import sys
 from getpass import getpass
-import requests
-
-api_url = 'https://api.lotame.com/2/'
-auth_url = 'https://crowdcontrol.lotame.com/auth/v1/tickets'
+import better_lotameapi as lotame
 
 
-def get_audience_info(tgt, audience_id):
+def get_audience_info(audience_id):
     """Given the ticket-granting ticket and an audience ID, returns the JSON
     of the corresponding audience.
     """
-    endpoint = f'{api_url}audiences/{audience_id}'
-    payload = {'service': endpoint}
-    service_ticket = requests.post(tgt, data=payload).text
-    full_endpoint = f'{endpoint}?ticket={service_ticket}'
-    response = requests.get(full_endpoint)
+    response = lotame.get(f'audiences/{audience_id}')
 
     # Return None if a bad response is received
     status = response.status_code
@@ -35,16 +28,12 @@ def get_audience_info(tgt, audience_id):
     return response.json()
 
 
-def update_audience(tgt, audience_id, info):
+def update_audience(audience_id, info):
     """Given the ticket-granting ticket, an audience ID, and an audience JSON,
     performs a PUT request to update the given audience. Returns True if the
     update was successful, or False if it was not.
     """
-    endpoint = f'{api_url}audiences/{audience_id}'
-    payload = {'service': endpoint}
-    service_ticket = requests.post(tgt, data=payload).text
-    full_endpoint = f'{endpoint}?ticket={service_ticket}'
-    response = requests.put(full_endpoint, json=info)
+    response = lotame.put(f'audiences/{audience_id}', info)
 
     # Return False if a bad response is received
     status = response.status_code
@@ -64,13 +53,12 @@ def main():
 
     username = input('Username: ')
     password = getpass()
-    payload = {'username': username, 'password': password}
 
     # Exit if we cannot get the ticket-granting ticket (i.e. if the username
     # and/or password are incorrect)
     try:
-        tgt = requests.post(auth_url, data=payload).headers['location']
-    except KeyError:
+        lotame.authenticate(username, password)
+    except lotame.AuthenticationError:
         print('Error: Invalid username and/or password.')
         sys.exit()
 
@@ -88,7 +76,7 @@ def main():
         audience_ids = [audience_id.strip() for audience_id in infile]
 
     for audience_id in audience_ids:
-        info = get_audience_info(tgt, audience_id)
+        info = get_audience_info(audience_id)
 
         # Skip to the next audience if this one could not be found
         if not info:
@@ -110,14 +98,14 @@ def main():
             info['overlapOnly'] = False  # Extend
 
         # Attempt to update the audience and print whether it was successful
-        audience_updated = update_audience(tgt, audience_id, info)
+        audience_updated = update_audience(audience_id, info)
         if audience_updated:
             print(f'Updated audience {audience_id}')
         else:
             print(f'Error updating audience {audience_id}')
 
     # Delete the ticket-granting ticket, now that we're done with it
-    requests.delete(tgt)
+    lotame.cleanup()
 
 
 if __name__ == '__main__':

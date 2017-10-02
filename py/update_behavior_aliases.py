@@ -14,20 +14,13 @@
 '''
 import sys
 from getpass import getpass
-import requests
 import openpyxl
-
-api_url = 'https://api.lotame.com/2/'
-auth_url = 'https://crowdcontrol.lotame.com/auth/v1/tickets'
+import better_lotameapi as lotame
 
 
-def get_behavior_alias_info(tgt, behavior_id):
+def get_behavior_alias_info(behavior_id):
     """Gets a behavior's JSON file of aliases."""
-    endpoint = f'{api_url}behaviors/{behavior_id}/aliases'
-    payload = {'service': endpoint}
-    service_ticket = requests.post(tgt, data=payload).text
-    full_endpoint = f'{endpoint}?ticket={service_ticket}'
-    response = requests.get(full_endpoint)
+    response = lotame.get(f'behaviors/{behavior_id}/aliases')
 
     # Return None if the behavior ID could not be found
     status = response.status_code
@@ -37,9 +30,9 @@ def get_behavior_alias_info(tgt, behavior_id):
     return response.json()
 
 
-def update_behavior_alias(tgt, behavior_id, new_alias, replace):
+def update_behavior_alias(behavior_id, new_alias, replace):
     """Updates a behavior's alias, either through replacing or appending."""
-    alias_info = get_behavior_alias_info(tgt, behavior_id)
+    alias_info = get_behavior_alias_info(behavior_id)
 
     # Return False if unable to grab existing alias info
     if not alias_info:
@@ -52,11 +45,8 @@ def update_behavior_alias(tgt, behavior_id, new_alias, replace):
     else:
         alias_info['alias'].append(new_alias)
 
-    endpoint = f'{api_url}behaviors/{behavior_id}/aliases'
-    payload = {'service': endpoint}
-    service_ticket = requests.post(tgt, data=payload).text
-    full_endpoint = f'{endpoint}?ticket={service_ticket}'
-    response = requests.put(full_endpoint, json=alias_info)
+    # Update the behavior aliases
+    response = lotame.put(f'behaviors/{behavior_id}/aliases', alias_info)
 
     # Return False if adding the alias failed
     status = response.status_code
@@ -64,6 +54,7 @@ def update_behavior_alias(tgt, behavior_id, new_alias, replace):
         return False
 
     return True
+
 
 def main():
     """Reads from an Excel spreadsheet and replaces/appends aliases."""
@@ -73,13 +64,11 @@ def main():
 
     username = input('Username: ')
     password = getpass()
-    payload = {'username': username, 'password': password}
 
-    # Exit if we cannot get the ticket-granting ticket (i.e. if the username
-    # and/or password are incorrect)
+    # Authenticate with the Lotame API
     try:
-        tgt = requests.post(auth_url, data=payload).headers['location']
-    except KeyError:
+        lotame.authenticate(username, password)
+    except lotame.AuthenticationError:
         print('Error: Invalid username and/or password.')
         sys.exit()
 
@@ -104,14 +93,15 @@ def main():
         behavior_id = str(sheet[f'A{row}'].value)
         new_alias = str(sheet[f'B{row}'].value)
 
-        updated = update_behavior_alias(tgt, behavior_id, new_alias, replace)
+        updated = update_behavior_alias(behavior_id, new_alias, replace)
 
         if updated:
             print(f'Updated alias for behavior {behavior_id}')
         else:
             print(f'Error updating alias for behavior {behavior_id}')
 
-    requests.delete(tgt)
+    # Delete the ticket-granting ticket, now that the script is done with it
+    lotame.cleanup()
 
 
 if __name__ == '__main__':

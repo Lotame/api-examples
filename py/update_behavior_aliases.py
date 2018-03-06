@@ -1,16 +1,19 @@
 '''
+    Please note that this file is an example, not an official Lotame-supported
+    tool. The Support team at Lotame does not provide support for this script,
+    as it's only meant to serve as a guide to help you use the Services API.
+
     Filename: update_behavior_aliases.py
     Author: Brett Coker
-    Python Version: 3.6.2
+    Python Version: 3.6.3
+    Updated: 12/19/17
 
-    Adds or replaces behavior aliases. Takes an xls/xlsx as an argument.
+    Adds new aliases to behaviors. Takes an xlsx as an argument.
 
     The spreadsheet should be formatted as follows:
         - Header row required
         - First column is behavior IDs
         - Second column is aliases.
-
-    Dependent on openpyxl, available through pip.
 '''
 import sys
 from getpass import getpass
@@ -18,89 +21,48 @@ import openpyxl
 import better_lotameapi as lotame
 
 
-def get_behavior_alias_info(behavior_id):
-    """Gets a behavior's JSON file of aliases."""
-    response = lotame.get(f'behaviors/{behavior_id}/aliases')
-
-    # Return None if the behavior ID could not be found
-    status = response.status_code
-    if status != 200:
-        return None
-
-    return response.json()
-
-
-def update_behavior_alias(behavior_id, new_alias, replace):
-    """Updates a behavior's alias, either through replacing or appending."""
-    alias_info = get_behavior_alias_info(behavior_id)
-
-    # Return False if unable to grab existing alias info
-    if not alias_info:
-        return False
-
-    # Replace any aliases by inserting the new one as a list
-    if replace:
-        alias_info['alias'] = [new_alias]
-    # Append the new alias to the existing list
-    else:
-        alias_info['alias'].append(new_alias)
-
-    # Update the behavior aliases
-    response = lotame.put(f'behaviors/{behavior_id}/aliases', alias_info)
-
-    # Return False if adding the alias failed
-    status = response.status_code
-    if status != 204:
-        return False
-
-    return True
-
-
 def main():
-    """Reads from an Excel spreadsheet and replaces/appends aliases."""
-    if len(sys.argv) != 2:
-        print(f'Usage: python {sys.argv[0]} aliases.csv')
+    if len(sys.argv) == 1:
+        print(f'Usage: python {sys.argv[0]} aliases.xlsx')
         sys.exit()
 
     username = input('Username: ')
     password = getpass()
 
-    # Authenticate with the Lotame API
     try:
         lotame.authenticate(username, password)
     except lotame.AuthenticationError:
-        print('Error: Invalid username and/or password.')
+        print('Error: Invalid username or password.')
         sys.exit()
 
-    print('Select option:')
-    print('1. Replace aliases')
-    print('2. Append aliases')
     option = 0
-    # Loop until a valid choice is given by the user
     while option not in ['1', '2']:
+        print('Select option:')
+        print('1. Replace variants')
+        print('2. Append variants')
         option = input('Option: ')
 
-    replace = bool(option == 1)
-
-    # Prepare to read from the Excel spreadsheet
     filename = sys.argv[1]
     workbook = openpyxl.load_workbook(filename)
     sheet_names = workbook.get_sheet_names()
     sheet = workbook.get_sheet_by_name(sheet_names[0])
 
-    # Go through the Excel spreadsheet, skipping the first row (header)
     for row in range(2, sheet.max_row + 1):
         behavior_id = str(sheet[f'A{row}'].value)
         new_alias = str(sheet[f'B{row}'].value)
 
-        updated = update_behavior_alias(behavior_id, new_alias, replace)
+        endpoint = f'behaviors/{behavior_id}/aliases'
+        info = lotame.get(endpoint).json()
 
-        if updated:
-            print(f'Updated alias for behavior {behavior_id}')
-        else:
-            print(f'Error updating alias for behavior {behavior_id}')
+        if option == '1':  # Replace
+            info['alias'] = [new_alias]
+        else:  # Append
+            info['alias'].append(new_alias)
 
-    # Delete the ticket-granting ticket, now that the script is done with it
+        status = lotame.put(endpoint, info).status_code
+
+        print(f'Behavior {behavior_id} | HTTP {status}')
+
     lotame.cleanup()
 
 

@@ -1,4 +1,8 @@
 '''
+    Please note that this file is an example, not an official Lotame-supported
+    tool. The Support team at Lotame does not provide support for this script,
+    as it's only meant to serve as a guide to help you use the Services API.
+
     Filename: better_lotameapi.py
     Author: Brett Coker
     Version: 1.1.5
@@ -17,8 +21,7 @@
     decision was made so that status codes and the like could be read. If you
     need the response JSON, just use .json() on the resulting object.
 
-    If you want to be nice to our API, be sure to cleanup() after yourself when
-    you're done.
+    Please be sure to cleanup() after yourself when you're done.
 '''
 import json
 import requests

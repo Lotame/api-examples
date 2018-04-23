@@ -13,6 +13,6 @@ Interactive documentation for the Lotame API is available at https://api.lotame.
 
 # License
 
-Copyright (c) 2015 Lotame Solutions, Inc.
+Copyright (c) 2017 Lotame Solutions, Inc.
 
 Published under The MIT License, see LICENSE

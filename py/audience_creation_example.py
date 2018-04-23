@@ -1,30 +1,26 @@
 '''
     Filename: audience_creation_example.py
     Author: Brett Coker
-    Python Version: 3.6.1
+    Python Version: 3.6.2
 
     An example of how to use the Lotame API to create a basic audience,
     consisting of two behaviors ANDed together. This script assumes that the
     audience should be created on Enrich, with the APR disabled.
 '''
-import requests
 import sys
 from getpass import getpass
-
-api_url = 'https://api.lotame.com/2/'
-auth_url = 'https://crowdcontrol.lotame.com/auth/v1/tickets'
+import better_lotameapi as lotame
 
 
 def main():
     username = input('Username: ')
     password = getpass()
-    payload = {'username': username, 'password': password}
 
     # Exit if we cannot get the ticket-granting ticket (i.e. if the username
     # and/or password are incorrect)
     try:
-        tgt = requests.post(auth_url, data=payload).headers['location']
-    except KeyError:
+        lotame.authenticate(username, password)
+    except lotame.AuthenticationError:
         print('Error: Invalid username and/or password.')
         sys.exit()
 
@@ -68,18 +64,14 @@ def main():
     }
 
     # Use the above audience JSON to create the new audience
-    endpoint = 'audiences'
-    service_call = api_url + endpoint
-    payload = {'service': service_call}
-    service_ticket = requests.post(tgt, data=payload).text
-    new_audience = requests.post(service_call + '?ticket=' + service_ticket, json=audience).json()
+    new_audience = lotame.post('audiences', audience).json()
 
     # Print out the ID of the new audience
     new_audience_id = new_audience['id']
     print('New audience created with ID ' + new_audience_id)
 
     # Delete the ticket-granting ticket, now that we're done with it
-    requests.delete(tgt)
+    lotame.cleanup()
 
 
 def create_behavior_definition(behavior_id, relationship):

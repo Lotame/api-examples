@@ -1,45 +1,31 @@
 '''
     Filename: get_audience_behaviors.py
     Author: Brett Coker
-    Python Version: 3.6.1
+    Python Version: 3.6.2
 
     Given a user-inputted audience ID, prints out a list of behaviors used to
     create that audience.
 '''
-import requests
 import sys
 from getpass import getpass
-
-# Two URLs that must be defined for working with the Lotame API
-api_url = 'https://api.lotame.com/2/'
-auth_url = 'https://crowdcontrol.lotame.com/auth/v1/tickets'
+import better_lotameapi as lotame
 
 
 def main():
     username = input('Username: ')
     password = getpass()
-    payload = {'username': username, 'password': password}
 
-    # Get the ticket-granting ticket from the Lotame API. If we get a KeyError,
-    # we know that the credentials are invalid, so we handle this by exiting
+    # Authenticate with the Lotame API
     try:
-        tgt = requests.post(auth_url, data=payload).headers['location']
-    except KeyError:
+        lotame.authenticate(username, password)
+    except lotame.AuthenticationError:
         print('Error: Invalid username and/or password.')
         sys.exit()
 
     audience_id = input('Audience ID: ')
 
-    endpoint = 'audiences/' + audience_id
-    service_call = api_url + endpoint
-    payload = {'service': service_call}
-
-    # This call gets the service ticket from the API. This ticket is
-    # only valid for ten seconds, will only work once, and will only
-    # work for the endpoint provided in the payload (service_call)
-    service_ticket = requests.post(tgt, data=payload).text
-    # Perform the request that we want and get the Response object
-    response = requests.get(service_call + '?ticket=' + service_ticket)
+    # Get the audience info from the Lotame API
+    response = lotame.get(f'audiences/{audience_id}')
 
     # Pull the resulting JSON from the Response object and get the desired
     # values from it
@@ -48,7 +34,7 @@ def main():
     definition = audience_info['definition']['component']
 
     # Delete the ticket-granting ticket, now that the script is done with it
-    requests.delete(tgt)
+    lotame.cleanup()
 
     # If there are any nested groups of behaviors in the audience definition,
     # the best way to pull them out is with a recursive function, which is why

@@ -80,6 +80,9 @@ def main():
     valid_months = [str(month) for month in range(1, 13)]
     prompt = 'Enter a month (numeric): '
     month = get_choice(prompt, valid_months)
+    if len(month) == 1:
+        month = f'0{month}'
+
     year = get_choice('Enter a year: ')
     date = f'{year}{month}01'
 

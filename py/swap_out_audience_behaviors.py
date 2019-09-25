@@ -59,7 +59,9 @@ def replace_behavior(component, old_behavior_id, new_behavior_id, complete=False
         if complete:
             return True
         if item['component']:
-            complete = replace_behavior(component, old_behavior_id, new_behavior_id, complete)
+            complete = replace_behavior(item['component'], old_behavior_id, new_behavior_id, complete)
+            if complete:
+                return True
         else:
             current_behavior = item['complexAudienceBehavior']['behavior']['id']
             if current_behavior == old_behavior_id:

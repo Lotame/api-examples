@@ -13,8 +13,7 @@
     audience's definitions.
 '''
 import sys
-from getpass import getpass
-import better_lotameapi as lotame
+import better_lotameapi
 
 
 def add_recency(component, recency):
@@ -26,19 +25,22 @@ def add_recency(component, recency):
             item['complexAudienceBehavior']['recency'] = recency
 
 
+def get_audience(lotame, audience_id):
+    response = lotame.get(f'audiences/{audience_id}')
+    return response.json()
+
+
+def update_audience(lotame, audience_id, audience):
+    response = lotame.put(f'audiences/{audience_id}', audience)
+    return response.status_code == 204
+
+
 def main():
     if len(sys.argv) != 2:
         print(f'Usage: python {sys.argv[0]} audience_ids.txt')
-        sys.exit()
+        return
 
-    username = input('Username: ')
-    password = getpass()
-
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Invalid username and/or password.')
-        sys.exit()
+    lotame = better_lotameapi.Lotame()
 
     recency = input('Recency (in days): ')
     recency = str(int(recency) * 24 * 60)  # Convert secs to days
@@ -48,17 +50,18 @@ def main():
         for audience_id in audience_ids:
             audience_id = audience_id.strip()
 
-            info = lotame.get(f'audiences/{audience_id}').json()
-            component = info['definition']['component']
+            audience_id = audience_id.strip()
+
+            audience = get_audience(lotame, audience_id)
+            component = audience['definition']['component']
             add_recency(component, recency)
-            info['definition']['component'] = component
-            response = lotame.put(f'audiences/{audience_id}', info)
-            status = response.status_code
+            audience['definition']['component'] = component
+            
+            if update_audience(lotame, audience_id, audience):
+                print(f'Updated audience {audience_id}')
+            else:
+                print(f'Error: Unable to update audience {audience_id}')
 
-            print(f'Audience {audience_id} | HTTP {status}')
-
-    lotame.cleanup()
-
-
+    
 if __name__ == '__main__':
     main()

@@ -17,16 +17,15 @@
 '''
 import sys
 import csv
-from getpass import getpass
-import better_lotameapi as lotame
+import better_lotameapi
 
 
-def campaign_exists(campaign_id):
+def campaign_exists(lotame, campaign_id):
     status = lotame.get(f'campaigns/{campaign_id}').status_code
     return bool(status == 200)
 
 
-def add_interaction(campaign_id, behavior_id, interaction_type_id):
+def add_interaction(lotame, campaign_id, behavior_id, interaction_type_id):
     interaction = {
         'campaignId': campaign_id,
         'behaviorId': behavior_id,
@@ -42,16 +41,9 @@ def add_interaction(campaign_id, behavior_id, interaction_type_id):
 def main():
     if len(sys.argv) != 2:
         print(f'Usage: python {sys.argv[0]} interactions.csv')
-        sys.exit()
+        return
 
-    username = input('Username: ')
-    password = getpass()
-
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Invalid username and/or password')
-        sys.exit()
+    lotame = better_lotameapi.Lotame()
 
     filename = sys.argv[1]
     with open(filename) as csv_file:
@@ -65,19 +57,17 @@ def main():
             behavior_id = row[1]
             interaction_type_id = row[2]
 
-            if not campaign_exists(campaign_id):
+            if not campaign_exists(lotame, campaign_id):
                 print(f'Error: Cannot find campaign {campaign_id}')
                 continue
 
-            created = add_interaction(campaign_id, behavior_id, interaction_type_id)
+            created = add_interaction(lotame, campaign_id, behavior_id, interaction_type_id)
 
             if created:
                 print(f'Added {behavior_id} to campaign {campaign_id}')
             else:
                 print(f'Error: Could not add {behavior_id} to campaign {campaign_id}')
 
-    lotame.cleanup()
-
-
+    
 if __name__ == '__main__':
     main()

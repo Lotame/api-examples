@@ -5,24 +5,26 @@
 
     An example of how to use the Lotame API to create a basic audience,
     consisting of two behaviors ANDed together. This script assumes that the
-    audience should be created on Enrich, with the APR disabled.
+    audience should be created on My Profiles, with the APR disabled.
 '''
-import sys
-from getpass import getpass
-import better_lotameapi as lotame
+import better_lotameapi
+
+    
+def create_behavior_definition(behavior_id, relationship):
+    """Creates behavior definition from ID and relationship."""
+    definition = {
+        'operator': relationship,
+        'complexAudienceBehavior': {
+            'behavior': {
+                'id': behavior_id
+            }
+        }
+    }
+    return definition
 
 
 def main():
-    username = input('Username: ')
-    password = getpass()
-
-    # Exit if we cannot get the ticket-granting ticket (i.e. if the username
-    # and/or password are incorrect)
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Invalid username and/or password.')
-        sys.exit()
+    lotame = better_lotameapi.Lotame()
 
     client_id = input('Client ID: ')
     audience_name = input('New Audience Name: ')
@@ -53,7 +55,7 @@ def main():
     audience = {
         'clientId': client_id,
         'name': audience_name,
-        'overlapOnly': True,  # True for Enrich, False for Extend
+        'overlapOnly': True,  # True for My Profiles, False for All Profiles
         'generate_apr': False,  # Be sure to set whether APR should be enabled
         'Client': {
             'id': client_id
@@ -69,22 +71,6 @@ def main():
     # Print out the ID of the new audience
     new_audience_id = new_audience['id']
     print('New audience created with ID ' + new_audience_id)
-
-    # Delete the ticket-granting ticket, now that we're done with it
-    lotame.cleanup()
-
-
-def create_behavior_definition(behavior_id, relationship):
-    """Creates behavior definition from ID and relationship."""
-    definition = {
-        'operator': relationship,
-        'complexAudienceBehavior': {
-            'behavior': {
-                'id': behavior_id
-            }
-        }
-    }
-    return definition
 
 
 if __name__ == '__main__':

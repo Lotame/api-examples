@@ -1,209 +1,177 @@
 '''
-    Please note that this file is an example, not an official Lotame-supported
-    tool. The Support team at Lotame does not provide support for this script,
-    as it's only meant to serve as a guide to help you use the Services API.
-
     Filename: better_lotameapi.py
     Author: Brett Coker
-    Version: 1.1.5
-    Python Version: 3.6.1
+    Version: 2.0.0
+    Python Version: 3.6+
 
     A better Python interface for the Lotame API.
 
-    Call authenticate(username, password) once in order to authenticate, and
-    don't worry about passing around credentials or tickets after that.
+    Relies on a token and access key for authentication. You can generate
+    those by visiting this page:
 
-    Call any of the four main requests by passing in an endpoint as an
-    parameter. If you need to send a JSON file (or Python dict) along with your
-    request, use that as the second parameter.
+    https://platform.lotame.com/user/tokens
+    
+    Those should be placed into a lotame.ini file in the same directory.
+    Please see the sample on Github for formatting. Alternatively, you can
+    specify a token and access key when creating a Lotame object.
 
-    The objects returned from the four main requests are Resonse objects. This
-    decision was made so that status codes and the like could be read. If you
-    need the response JSON, just use .json() on the resulting object.
+    After creating a Lotame object, you can use it to make GET, POST,
+    PUT, and DELETE commands against the Lotame API.
 
-    Please be sure to cleanup() after yourself when you're done.
+    Prior to version 2.0.0, this module used Lotame's previous authentication
+    scheme. If you're upgrading from a previous version, you should make the
+    following changes to any existing scripts:
+
+        - Create a Lotame object
+        - Remove references to authenticate(username, password)
+        - Remove references to cleanup()
 '''
 import json
+import logging
+import configparser
 import requests
 
 API_URL = 'https://api.lotame.com/2/'
-AUTH_URL = 'https://crowdcontrol.lotame.com/auth/v1/tickets'
-TGT = ''
 
 
-def authenticate(username, password):
-    """Authenticate with the Lotame API.
+class Lotame():
+    def __init__(self, token=None, access=None):
+        if token and access:
+            self.headers = {
+                'x-lotame-token': token,
+                'x-lotame-access': access
+            }
+            return
 
-    Args:
-        username: your Lotame username (email address)
-        password: your Lotame password
-    Raises:
-        AuthenticationError: if username/password combo is invalid
-    """
-    global TGT
-    payload = {'username': username, 'password': password}
-
-    try:
-        TGT = requests.post(AUTH_URL, data=payload).headers['location']
-    except KeyError:
-        raise AuthenticationError('Error: Username and/or password invalid.')
-
-
-def cleanup():
-    """Delete the ticket-granting ticket."""
-    global TGT
-    requests.delete(TGT)
-    TGT = ''
-
-
-def not_authenticated(TGT):
-    """Return if ticket-granting ticket has been received."""
-    return TGT == ''
-
-
-def get(endpoint):
-    """Perform a GET request on the Lotame API.
-
-    Args:
-        endpoint: the endpoint to use (ex. 'clients/25')
-    Returns:
-        response: the response from the request
-    Raises:
-        ConnectionError: when connection to API server fails
-    """
-    attempts = 0
-    while attempts < 3:
+        config = configparser.ConfigParser()
+        config.read('lotame.ini')
         try:
-            full_url = _prepare_endpoint(endpoint.strip())
-            response = requests.get(full_url)
-            response.json()
-            return response
-        except (ConnectionError, TimeoutError,
-                requests.exceptions.ConnectionError,
-                requests.exceptions.ChunkedEncodingError,
-                json.decoder.JSONDecodeError):
-            attempts += 1
+            self.headers = {
+                'x-lotame-token': config['lotame']['token'],
+                'x-lotame-access': config['lotame']['access']
+            }
+        except KeyError:
+            raise ConfigError
+    
+    def get(self, endpoint):
+        """Perform a GET request on the Lotame API.
 
-    # Only raised if 3 attempts to hit the API fail
-    error_message = 'Failed to get response from ' + full_url
-    raise ConnectionError(error_message)
-
-
-def post(endpoint, options={}):
-    """Perform a POST request on the Lotame API.
-
-    Args:
-        endpoint: the endpoint to use (ex. 'clients/25')
-        options: dict of options to be passed as a JSON, if any (default = {})
-    Returns:
-        response: the response from the request
-    Raises:
-        ConnectionError: when connection to API server fails
-    """
-    attempts = 0
-    while attempts < 3:
-        try:
-            full_url = _prepare_endpoint(endpoint.strip())
-            response = requests.post(full_url, json=options)
-            if response.status_code != 204:
+        Args:
+            endpoint: the endpoint to use (ex. 'audiences/12345')
+        Returns:
+            response: the response from the request
+        Raises:
+            ConnectionError: when connection to API server fails
+        """
+        for _ in range(3):
+            try:
+                full_url = self._create_full_url(endpoint)
+                response = requests.get(full_url, headers=self.headers)
                 response.json()
-            return response
-        except (ConnectionError, TimeoutError,
-                requests.exceptions.ConnectionError,
-                requests.exceptions.ChunkedEncodingError,
-                json.decoder.JSONDecodeError):
-            attempts += 1
+                return response
+            except (ConnectionError, TimeoutError,
+                    requests.exceptions.ConnectionError,
+                    requests.exceptions.ChunkedEncodingError,
+                    json.decoder.JSONDecodeError):
+                logging.info(f'Attempt to hit {full_url} failed')
 
-    # Only raised if 3 attempts to hit the API fail
-    error_message = 'Failed to get response from ' + full_url
-    raise ConnectionError(error_message)
+        # Only raised if 3 attempts to hit the API fail
+        error_message = 'Failed to get response from ' + full_url
+        raise ConnectionError(error_message)
+
+    def post(self, endpoint, options={}):
+        """Perform a POST request on the Lotame API.
+
+        Args:
+            endpoint: the endpoint to use (ex. 'audiences/12345')
+            options: dict of options to be passed as a JSON, if any (default = {})
+        Returns:
+            response: the response from the request
+        Raises:
+            ConnectionError: when connection to API server fails
+        """
+        for _ in range(3):
+            try:
+                full_url = self._create_full_url(endpoint)
+                response = requests.post(full_url, json=options, headers=self.headers)
+                if response.status_code != 204:
+                    response.json()
+                return response
+            except (ConnectionError, TimeoutError,
+                    requests.exceptions.ConnectionError,
+                    requests.exceptions.ChunkedEncodingError,
+                    json.decoder.JSONDecodeError):
+                logging.info(f'Attempt to hit {full_url} failed')
+
+        # Only raised if 3 attempts to hit the API fail
+        error_message = 'Failed to get response from ' + full_url
+        raise ConnectionError(error_message)
+
+    def put(self, endpoint, options={}):
+        """Perform a PUT request on the Lotame API.
+
+        Args:
+            endpoint: the endpoint to use (ex. 'audiences/12345')
+            options: dict of options to be passed as a JSON, if any (default = {})
+        Returns:
+            response: the response from the request
+        Raises:
+            ConnectionError: when connection to API server fails
+        """
+        for _ in range(3):
+            try:
+                full_url = self._create_full_url(endpoint)
+                response = requests.put(full_url, json=options, headers=self.headers)
+                if response.status_code != 204:
+                    response.json()
+                return response
+            except (ConnectionError, TimeoutError,
+                    requests.exceptions.ConnectionError,
+                    requests.exceptions.ChunkedEncodingError,
+                    json.decoder.JSONDecodeError):
+                logging.info(f'Attempt to hit {full_url} failed')
+
+        # Only raised if 3 attempts to hit the API fail
+        error_message = 'Failed to get response from ' + full_url
+        raise ConnectionError(error_message)
+
+    def delete(self, endpoint):
+        """Perform a DELETE request on the Lotame API.
+
+        Args:
+            endpoint: the endpoint to use (ex. 'clients/25')
+        Returns:
+            response: the response from the request
+        Raises:
+            ConnectionError: when connection to API server fails
+        """
+        for _ in range(3):
+            try:
+                full_url = self._create_full_url(endpoint, headers=self.headers)
+                response = requests.delete(full_url)
+                return response
+            except (ConnectionError, TimeoutError,
+                    requests.exceptions.ConnectionError,
+                    requests.exceptions.ChunkedEncodingError):
+                logging.info(f'Attempt to hit {full_url} failed')
+
+        # Only raised if 3 attempts to hit the API fail
+        error_message = 'Failed to get response from ' + full_url
+        raise ConnectionError(error_message)
+
+    def _create_full_url(self, endpoint):
+        """Put the full API URL together.
+
+        Args:
+            endpoint: the endpoint to use (ex. 'audiences/12345')
+        Returns:
+            full_url: the URL to be used in the request
+        """
+        endpoint = endpoint.strip()
+        if endpoint.startswith('/'):
+            endpoint = endpoint[1:]
+        return API_URL + endpoint
 
 
-def put(endpoint, options={}):
-    """Perform a PUT request on the Lotame API.
-
-    Args:
-        endpoint: the endpoint to use (ex. 'clients/25')
-        options: dict of options to be passed as a JSON, if any (default = {})
-    Returns:
-        response: the response from the request
-    Raises:
-        ConnectionError: when connection to API server fails
-    """
-    attempts = 0
-    while attempts < 3:
-        try:
-            full_url = _prepare_endpoint(endpoint.strip())
-            response = requests.put(full_url, json=options)
-            if response.status_code != 204:
-                response.json()
-            return response
-        except (ConnectionError, TimeoutError,
-                requests.exceptions.ConnectionError,
-                requests.exceptions.ChunkedEncodingError,
-                json.decoder.JSONDecodeError):
-            attempts += 1
-
-    # Only raised if 3 attempts to hit the API fail
-    error_message = 'Failed to get response from ' + full_url
-    raise ConnectionError(error_message)
-
-
-def delete(endpoint):
-    """Perform a DELETE request on the Lotame API.
-
-    Args:
-        endpoint: the endpoint to use (ex. 'clients/25')
-    Returns:
-        response: the response from the request
-    Raises:
-        ConnectionError: when connection to API server fails
-    """
-    attempts = 0
-    while attempts < 3:
-        try:
-            full_url = _prepare_endpoint(endpoint.strip())
-            response = requests.delete(full_url)
-            return response
-        except (ConnectionError, TimeoutError,
-                requests.exceptions.ConnectionError,
-                requests.exceptions.ChunkedEncodingError):
-            attempts += 1
-
-    # Only raised if 3 attempts to hit the API fail
-    error_message = 'Failed to get response from ' + full_url
-    raise ConnectionError(error_message)
-
-
-def _prepare_endpoint(endpoint):
-    """Prepare endpoint for execution.
-
-    Args:
-        endpoint: the endpoint to use (ex. 'clients/25')
-    Returns:
-        full_url: the URL to be used in the request
-    Raises:
-        AuthenticationError: if there is no ticket-granting ticket
-    """
-    if not_authenticated(TGT):
-        raise AuthenticationError('Error: Not authenticated.')
-
-    # Remove preceding slash from endpoint, if any
-    if endpoint[0] == '/':
-        endpoint = endpoint[1:]
-
-    service_call = API_URL + endpoint
-    payload = {'service': service_call}
-    service_ticket = requests.post(TGT, data=payload).text
-
-    # Use proper character to append ticket, depending on endpoint
-    if '?' in endpoint:
-        full_url = service_call + '&ticket=' + service_ticket
-    else:
-        full_url = service_call + '?ticket=' + service_ticket
-
-    return full_url
-
-
-class AuthenticationError(Exception):
-    """Raise when authentication has not been granted."""
+class ConfigError(Exception):
+    """Raised when lotame.ini is missing or improperly formatted"""

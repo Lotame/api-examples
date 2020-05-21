@@ -8,7 +8,7 @@
     Python Version: 3.6.3
     Updated: 12/19/17
 
-    Adds new aliases to behaviors. Takes an xlsx as an argument.
+    Adds new aliases to behaviors. Takes an .xlsx as an argument.
 
     The spreadsheet should be formatted as follows:
         - Header row required
@@ -16,24 +16,16 @@
         - Second column is aliases.
 '''
 import sys
-from getpass import getpass
 import openpyxl
-import better_lotameapi as lotame
+import better_lotameapi
 
 
 def main():
     if len(sys.argv) == 1:
         print(f'Usage: python {sys.argv[0]} aliases.xlsx')
-        sys.exit()
+        return
 
-    username = input('Username: ')
-    password = getpass()
-
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Invalid username or password.')
-        sys.exit()
+    lotame = better_lotameapi.Lotame()
 
     option = 0
     while option not in ['1', '2']:
@@ -63,8 +55,6 @@ def main():
 
         print(f'Behavior {behavior_id} | HTTP {status}')
 
-    lotame.cleanup()
-
-
+    
 if __name__ == '__main__':
     main()

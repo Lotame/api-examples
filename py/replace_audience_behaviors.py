@@ -20,9 +20,8 @@
         - Behavior IDs in every column after the first, one per column
 '''
 import sys
-from getpass import getpass
 import csv
-import better_lotameapi as lotame
+import better_lotameapi
 
 
 def choice(prompt, valid_options):
@@ -33,7 +32,7 @@ def choice(prompt, valid_options):
     return answer
 
 
-def get_audience_info(audience_id):
+def get_audience_info(lotame, audience_id):
     """Grabs audience info from the API."""
     response = lotame.get(f'audiences/{audience_id}')
 
@@ -44,7 +43,7 @@ def get_audience_info(audience_id):
     return response.json()
 
 
-def put_audience_info(audience_id, audience_info):
+def put_audience_info(lotame, audience_id, audience_info):
     """Updates an audience."""
     status = lotame.put(f'audiences/{audience_id}', audience_info).status_code
 
@@ -70,16 +69,9 @@ def create_behavior_definition(behavior_id, relationship):
 def main():
     if len(sys.argv) != 2:
         print(f'Usage: python {sys.argv[0]} audiences.xlsx')
-        sys.exit()
+        return
 
-    username = input('Username: ')
-    password = getpass()
-
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Invalid username and/or password')
-        sys.exit()
+    lotame = better_lotameapi.Lotame()
 
     print('Relationship?')
     print('1. AND')
@@ -101,7 +93,7 @@ def main():
         for row in reader:
             audience_id = row.pop(0)
 
-            audience_info = get_audience_info(audience_id)
+            audience_info = get_audience_info(lotame, audience_id)
             if not audience_info:
                 print(f'Error: Could not find audience {audience_id}')
                 continue
@@ -117,13 +109,11 @@ def main():
                 behaviors.append(behavior)
 
             audience_info['definition']['component'] = behaviors
-            if put_audience_info(audience_id, audience_info):
+            if put_audience_info(lotame, audience_id, audience_info):
                 print(f'Updated audience {audience_id}')
             else:
                 print(f'Error: Could not update audience {audience_id}')
 
-    lotame.cleanup()
-
-
+    
 if __name__ == '__main__':
     main()

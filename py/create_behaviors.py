@@ -7,7 +7,7 @@
     Author: Brett Coker
     Python Version: 3.6.4
 
-    Opens an xlsx and creates behaviors based off of the information in it.
+    Opens an .xlsx and creates behaviors based off of the information in it.
     The spreadsheet should be formatted as follows:
         - Must have a header row
         - Column A is the behavior name
@@ -17,20 +17,16 @@
     Run this with the .xlsx file as an argument.
 '''
 import sys
-from getpass import getpass
 import openpyxl
-import better_lotameapi as lotame
+import better_lotameapi
 
 
 def main():
     if len(sys.argv) != 2:
         print(f'Usage: python {sys.argv[0]} behaviors.xlsx')
-        sys.exit()
+        return
 
-    username = input('Username: ')
-    password = getpass()
-
-    lotame.authenticate(username, password)
+    lotame = better_lotameapi.Lotame()
 
     filename = sys.argv[1]
     workbook = openpyxl.load_workbook(filename)
@@ -53,8 +49,6 @@ def main():
         response = lotame.post('behaviors?use_aliases=true', options)
         print(f'{name} | {response.status_code}')
 
-    lotame.cleanup()
-
-
+    
 if __name__ == '__main__':
     main()

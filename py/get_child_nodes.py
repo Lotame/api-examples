@@ -9,20 +9,11 @@
 
     Given a hierarchy ID, returns the IDs of all children, grandchildren, etc.
 '''
-import sys
-from getpass import getpass
-import better_lotameapi as lotame
+import better_lotameapi
 
 
 def main():
-    username = input('Username: ')
-    password = getpass()
-
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Invalid username and/or password.')
-        sys.exit()
+    lotame = better_lotameapi.Lotame()
 
     hierarchy_id = input('Hierarchy ID: ')
     endpoint = f'hierarchies/{hierarchy_id}/nodes?depth=2'
@@ -31,7 +22,7 @@ def main():
     if response.status_code != 200:
         print('Error: Could not find hierarchy.')
         lotame.cleanup()
-        sys.exit()
+        return
 
     nodes = response.json()['nodes']
     node_ids = []
@@ -43,9 +34,7 @@ def main():
     for node_id in node_ids:
         print(node_id)
 
-    lotame.cleanup()
-
-
+    
 def get_child_nodes(node, node_ids):
     """Recursively checks all child nodes for more children."""
     if node['childNodes']:

@@ -14,8 +14,7 @@
 '''
 import sys
 import csv
-from getpass import getpass
-import better_lotameapi as lotame
+import better_lotameapi
 
 
 def get_choice(prompt, options=None):
@@ -28,7 +27,7 @@ def get_choice(prompt, options=None):
     return choice
 
 
-def get_behavior_client_id(behavior_id):
+def get_behavior_client_id(lotame, behavior_id):
     response = lotame.get(f'behaviors/{behavior_id}')
 
     status = response.status_code
@@ -38,8 +37,8 @@ def get_behavior_client_id(behavior_id):
     return response.json()['clientId']
 
 
-def get_monthly_uniques(behavior_id, network, date):
-    client_id = get_behavior_client_id(behavior_id)
+def get_monthly_uniques(lotame, behavior_id, network, date):
+    client_id = get_behavior_client_id(lotame, behavior_id)
 
     if not client_id:
         return None
@@ -62,16 +61,9 @@ def get_monthly_uniques(behavior_id, network, date):
 def main():
     if len(sys.argv) != 2:
         print(f'Usage: python {sys.argv[0]} behavior_ids.txt')
-        sys.exit()
+        return
 
-    username = input('Username: ')
-    password = getpass()
-
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Invalid username and/or password.')
-        sys.exit()
+    lotame = better_lotameapi.Lotame()
 
     filename = sys.argv[1]
     with open(filename) as behavior_file:
@@ -92,7 +84,7 @@ def main():
     behavior_stats = []
     print('Grabbing stats...')
     for behavior_id in behavior_ids:
-        uniques = get_monthly_uniques(behavior_id, network, date)
+        uniques = get_monthly_uniques(lotame, behavior_id, network, date)
 
         if not uniques:
             print(f'Error: Couldn\'t get uniques for {behavior_id}')
@@ -105,11 +97,9 @@ def main():
 
         behavior_stats.append(behavior_stat)
 
-    lotame.cleanup()
-
-    if not behavior_stats:
-        print('Couldn\'t get any stats')
-        sys.exit()
+        if not behavior_stats:
+            print('Couldn\'t get any stats')
+            return
 
     filename = f'monthly_stats_{date}.csv'
     with open(filename, 'w') as statfile:

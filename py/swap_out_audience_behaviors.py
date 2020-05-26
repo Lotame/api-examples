@@ -20,11 +20,10 @@
 '''
 import sys
 import csv
-from getpass import getpass
-import better_lotameapi as lotame
+import better_lotameapi
 
 
-def get_audience_info(audience_id):
+def get_audience_info(lotame, audience_id):
     response = lotame.get(f'audiences/{audience_id}')
 
     status = response.status_code
@@ -34,7 +33,7 @@ def get_audience_info(audience_id):
     return response.json()
 
 
-def set_audience_info(audience_id, info):
+def set_audience_info(lotame, audience_id, info):
     response = lotame.put(f'audiences/{audience_id}', info)
 
     status = response.status_code
@@ -44,7 +43,7 @@ def set_audience_info(audience_id, info):
     return True
 
 
-def is_valid_behavior_id(behavior_id):
+def is_valid_behavior_id(lotame, behavior_id):
     response = lotame.get(f'behaviors/{behavior_id}')
 
     status = response.status_code
@@ -59,7 +58,9 @@ def replace_behavior(component, old_behavior_id, new_behavior_id, complete=False
         if complete:
             return True
         if item['component']:
-            complete = replace_behavior(component, old_behavior_id, new_behavior_id, complete)
+            complete = replace_behavior(item['component'], old_behavior_id, new_behavior_id, complete)
+            if complete:
+                return True
         else:
             current_behavior = item['complexAudienceBehavior']['behavior']['id']
             if current_behavior == old_behavior_id:
@@ -73,16 +74,9 @@ def replace_behavior(component, old_behavior_id, new_behavior_id, complete=False
 def main():
     if len(sys.argv) != 2:
         print(f'Usage: python {sys.argv[0]} audiences.csv')
-        sys.exit()
+        return
 
-    username = input('Username: ')
-    password = getpass()
-
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Invalid username and/or password.')
-        sys.exit()
+    lotame = better_lotameapi.Lotame()
 
     filename = sys.argv[1]
     with open(filename) as csv_file:
@@ -98,10 +92,10 @@ def main():
             old_behavior_id = row[1]
             new_beahvior_id = row[2]
 
-            audience_info = get_audience_info(audience_id)
+            audience_info = get_audience_info(lotame, audience_id)
 
             for behavior_id in [old_behavior_id, new_beahvior_id]:
-                if not is_valid_behavior_id(behavior_id):
+                if not is_valid_behavior_id(lotame, behavior_id):
                     print(f'Error: {behavior_id} is not a valid behavior ID')
                     skip_row = True
 
@@ -117,13 +111,11 @@ def main():
 
             audience_info['definition']['component'] = component
 
-            if set_audience_info(audience_id, audience_info):
+            if set_audience_info(lotame, audience_id, audience_info):
                 print(f'Updated audience {audience_id} with behavior {new_beahvior_id}')
             else:
                 print(f'Error: Couldn\'t update audience {audience_id} with {new_beahvior_id}')
 
-    lotame.cleanup()
-
-
+    
 if __name__ == '__main__':
     main()

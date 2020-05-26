@@ -12,12 +12,11 @@
 '''
 import sys
 import csv
-from getpass import getpass
 from datetime import datetime
-import better_lotameapi as lotame
+import better_lotameapi
 
 
-def get_apr_gender_percents(audience_id):
+def get_apr_gender_percents(lotame, audience_id):
     response = lotame.get(f'reports/audiences/{audience_id}/profile/type/6')
 
     status = response.status_code
@@ -40,16 +39,9 @@ def get_apr_gender_percents(audience_id):
 def main():
     if len(sys.argv) != 2:
         print(f'Usage: python {sys.argv[0]} audience_ids.txt')
-        sys.exit()
+        return
 
-    username = input('Username: ')
-    password = getpass()
-
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Invalid username and/or password.')
-        sys.exit()
+    lotame = better_lotameapi.Lotame()
 
     filename = sys.argv[1]
     with open(filename) as audience_file:
@@ -63,7 +55,7 @@ def main():
         writer.writerow(['Audience ID', 'Audience Name', 'Male', 'Female'])
 
         for audience_id in audience_ids:
-            gender_percents = get_apr_gender_percents(audience_id)
+            gender_percents = get_apr_gender_percents(lotame, audience_id)
 
             if not gender_percents:
                 print(f'Error: Could not get APR for audience {audience_id}')
@@ -77,8 +69,6 @@ def main():
             writer.writerow(row)
 
     print(f'Results exported to {outfile_name}')
-    lotame.cleanup()
-
-
+    
 if __name__ == '__main__':
     main()

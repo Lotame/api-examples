@@ -10,24 +10,16 @@
     Takes a txt file that is a list of audience IDs (one per line) and enables
     APR for those audiences.
 '''
-import better_lotameapi as lotame
 import sys
-from getpass import getpass
+import better_lotameapi
 
 
 def main():
     if len(sys.argv) != 2:
         print(f'Usage: python {sys.argv[0]} audience_ids.txt')
-        sys.exit()
+        return
 
-    username = input('Username: ')
-    password = getpass()
-
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Incorrect username and/or password.')
-        sys.exit()
+    lotame = better_lotameapi.Lotame()
 
     filename = sys.argv[1]
     with open(filename) as file:
@@ -43,8 +35,6 @@ def main():
                 status = response.status_code
                 print(f'Audience {audience_id} | HTTP {status}')
 
-    lotame.cleanup()
-
-
+    
 if __name__ == '__main__':
     main()

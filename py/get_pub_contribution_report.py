@@ -10,28 +10,19 @@
     Outputs a publisher contribution report CSV for a given audience ID.
 '''
 import csv
-import sys
-from getpass import getpass
-import better_lotameapi as lotame
+import better_lotameapi
 
 
 def main():
-    username = input('Username: ')
-    password = getpass()
-
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Invalid username and/or password.')
+    lotame = better_lotameapi.Lotame()
 
     audience_id = input('Audience ID: ')
-
     response = lotame.get(f'reports/audiences/{audience_id}/publisher')
     status = response.status_code
 
     if status != 200:
         print('Error retrieving contribution report.')
-        sys.exit()
+        return
 
     report = response.json()
 

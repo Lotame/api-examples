@@ -15,14 +15,13 @@
         - Interaction ID in column B
 '''
 import sys
-from getpass import getpass
 import csv
-import better_lotameapi as lotame
+import better_lotameapi
 
 
-def delete_interaction(campaign_id, interaction_id):
+def delete_interaction(lotame, campaign_id, interaction_id):
     endpoint = f'campaigns/{campaign_id}/interactions/{interaction_id}' \
-               '?deep_clean=true'
+                '?deep_clean=true'
 
     status = lotame.delete(endpoint).status_code
 
@@ -35,16 +34,9 @@ def delete_interaction(campaign_id, interaction_id):
 def main():
     if len(sys.argv) != 2:
         print(f'Usage: python {sys.argv[0]} campaigns.csv')
-        sys.exit()
+        return
 
-    username = input('Username: ')
-    password = getpass()
-
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Invalid username and/or password')
-        sys.exit()
+    lotame = better_lotameapi.Lotame()
 
     filename = sys.argv[1]
     with open(filename) as csv_file:
@@ -57,7 +49,7 @@ def main():
             campaign_id = row[0]
             interaction_id = row[1]
 
-            if delete_interaction(campaign_id, interaction_id):
+            if delete_interaction(lotame, campaign_id, interaction_id):
                 message = f'Deleted interaction {interaction_id} from ' \
                           f'campaign {campaign_id}'
             else:
@@ -65,8 +57,6 @@ def main():
                           f'from campaign {campaign_id}'
             print(message)
 
-    lotame.cleanup()
-
-
+    
 if __name__ == '__main__':
     main()

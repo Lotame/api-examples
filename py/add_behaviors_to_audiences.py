@@ -19,12 +19,11 @@
     means they will be in their own group (i.e. not nested).
 '''
 import sys
-from getpass import getpass
 import csv
-import better_lotameapi as lotame
+import better_lotameapi
 
 
-def get_audience_info(audience_id):
+def get_audience_info(lotame, audience_id):
     response = lotame.get(f'audiences/{audience_id}')
 
     status = response.status_code
@@ -34,12 +33,12 @@ def get_audience_info(audience_id):
     return response.json()
 
 
-def set_audience_info(audience_id, info):
+def set_audience_info(lotame, audience_id, info):
     status = lotame.put(f'audiences/{audience_id}', info).status_code
     return bool(status == 204)
 
 
-def is_valid_behavior(behavior_id):
+def is_valid_behavior(lotame, behavior_id):
     status = lotame.get(f'behaviors/{behavior_id}').status_code
     return bool(status == 200)
 
@@ -47,16 +46,9 @@ def is_valid_behavior(behavior_id):
 def main():
     if len(sys.argv) != 2:
         print(f'Usage: python {sys.argv[0]} audiences.csv')
-        sys.exit()
+        return
 
-    username = input('Username: ')
-    password = getpass()
-
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Invalid username and/or password')
-        sys.exit()
+    lotame = better_lotameapi.Lotame()
 
     print('Append options:')
     print('1. AND')
@@ -81,12 +73,12 @@ def main():
             audience_id = row[0]
             behavior_id = row[1]
 
-            audience_info = get_audience_info(audience_id)
+            audience_info = get_audience_info(lotame, audience_id)
             if not audience_info:
                 print(f'Error: Audience {audience_id} not found')
                 continue
 
-            if not is_valid_behavior(behavior_id):
+            if not is_valid_behavior(lotame, behavior_id):
                 print(f'Error: Behavior {behavior_id} not found')
                 continue
 
@@ -100,13 +92,11 @@ def main():
             }
 
             audience_info['definition']['component'].append(behavior)
-            if set_audience_info(audience_id, audience_info):
+            if set_audience_info(lotame, audience_id, audience_info):
                 print(f'Updated audience {audience_id}')
             else:
                 print(f'Error: Could not update audience {audience_id}')
 
-    lotame.cleanup()
-
-
+    
 if __name__ == '__main__':
     main()

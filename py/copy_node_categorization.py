@@ -15,12 +15,11 @@
         - Column B: Node IDs to copy to
 '''
 import sys
-from getpass import getpass
 import openpyxl
-import better_lotameapi as lotame
+import better_lotameapi
 
 
-def get_categorized(node_id, client_id):
+def get_categorized(lotame, node_id, client_id):
     endpoint = f'hierarchies/nodes/{node_id}/categorizedBehaviors' \
                f'?client_id={client_id}'
     response = lotame.get(endpoint)
@@ -32,7 +31,7 @@ def get_categorized(node_id, client_id):
     return response.json()
 
 
-def categorize(node_id, info):
+def categorize(lotame, node_id, info):
     endpoint = f'hierarchies/nodes/{node_id}/categorizedBehaviors'
     response = lotame.put(endpoint, info)
 
@@ -46,16 +45,9 @@ def categorize(node_id, info):
 def main():
     if len(sys.argv) != 2:
         print(f'Usage: python {sys.argv[0]} nodes.xlsx')
-        sys.exit()
+        return
 
-    username = input('Username: ')
-    password = getpass()
-
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Invalid username and/or password.')
-        sys.exit()
+    lotame = better_lotameapi.Lotame()
 
     client_id = input('Hierarchy owner ID: ')
 
@@ -68,7 +60,7 @@ def main():
         original_id = str(sheet[f'A{row}'].value)
         duplicate_id = str(sheet[f'B{row}'].value)
 
-        categorized = get_categorized(original_id, client_id)
+        categorized = get_categorized(lotame, original_id, client_id)
         if not categorized['behavior']:
             print(f'Nothing to categorize from {original_id} to {duplicate_id}')
             continue
@@ -80,14 +72,12 @@ def main():
             del behavior['modified']
             del behavior['categories']
 
-        success = categorize(duplicate_id, categorized)
+        success = categorize(lotame, duplicate_id, categorized)
         if success:
             print(f'Copied from {original_id} to {duplicate_id}')
         else:
             print(f'Error copying from {original_id} to {duplicate_id}')
 
-    lotame.cleanup()
-
-
+    
 if __name__ == '__main__':
     main()

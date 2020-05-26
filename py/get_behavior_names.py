@@ -8,25 +8,15 @@
     Goes through a list of behavior IDs and outputs the name of each behavior.
 '''
 import sys
-from getpass import getpass
-import better_lotameapi as lotame
+import better_lotameapi
 
 
 def main():
-    # Exit if there's no argument passed in
     if len(sys.argv) != 2:
         print(f'Usage: python {sys.argv[0]} behavior_ids.txt')
-        sys.exit()
+        return
 
-    username = input('Username: ')
-    password = getpass()
-
-    # Authenticate with the Lotame API
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Invalid username and/or password.')
-        sys.exit()
+    lotame = better_lotameapi.Lotame()
 
     # Open the user-provided list of behavior IDs and go through each line
     filename = sys.argv[1]
@@ -45,10 +35,6 @@ def main():
             behavior_name = behavior_info['name']
 
             print(behavior_id + '\t' + behavior_name)
-
-    # Delete the ticket-granting ticket, now that the script is done with it
-    lotame.cleanup()
-
-
+    
 if __name__ == '__main__':
     main()

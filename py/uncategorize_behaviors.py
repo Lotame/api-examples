@@ -7,14 +7,13 @@
     Author: Brett Coker
     Python Version: 3.6.2
 
-    Uncategorizes a list of behaviors, given an xls such that:
+    Uncategorizes a list of behaviors, given an .xlsx such that:
     - Column A contains node IDs
     - Column B contains behavior IDs
 '''
 import sys
-import getpass
 import openpyxl
-import better_lotameapi as lotame
+import better_lotameapi
 
 
 def main():
@@ -22,14 +21,7 @@ def main():
         print(f'Usage: python {sys.argv[0]} behaviors.xlsx')
         sys.exit()
 
-    username = input('Username: ')
-    password = getpass.getpass()
-
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Invalid username or password.')
-        sys.exit()
+    lotame = better_lotameapi.Lotame()
 
     # Prep to open given Excel file
     filename = sys.argv[1]
@@ -53,8 +45,6 @@ def main():
         else:
             print(f'Error decategorizing behavior {behavior_id} from {node_id}')
 
-    lotame.cleanup()
-
-
+    
 if __name__ == '__main__':
     main()

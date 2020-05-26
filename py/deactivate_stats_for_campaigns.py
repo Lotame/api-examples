@@ -12,23 +12,15 @@
     Takes a .txt file of campaign IDs as an argument.
 '''
 import sys
-from getpass import getpass
-import better_lotameapi as lotame
+import better_lotameapi
 
 
 def main():
     if len(sys.argv) != 2:
         print(f'Usage: python {sys.argv[0]} campaign_ids.txt')
-        sys.exit()
+        return
 
-    username = input('Username: ')
-    password = getpass()
-
-    try:
-        lotame.authenticate(username, password)
-    except lotame.AuthenticationError:
-        print('Error: Invalid username and/or password.')
-        sys.exit()
+    lotame = better_lotameapi.Lotame()
 
     filename = sys.argv[1]
     with open(filename) as campaign_file:
@@ -53,8 +45,6 @@ def main():
         else:
             print(f'Could not deactivate stats for campaign {campaign_id}')
 
-    lotame.cleanup()
-
-
+    
 if __name__ == '__main__':
     main()

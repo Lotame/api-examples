@@ -1,7 +1,7 @@
 '''
     Filename: better_lotameapi.py
     Author: Brett Coker
-    Version: 2.0.0
+    Version: 2.0.1
     Python Version: 3.6+
 
     A better Python interface for the Lotame API.
@@ -147,8 +147,8 @@ class Lotame():
         """
         for _ in range(3):
             try:
-                full_url = self._create_full_url(endpoint, headers=self.headers)
-                response = requests.delete(full_url)
+                full_url = self._create_full_url(endpoint)
+                response = requests.delete(full_url, headers=self.headers)
                 return response
             except (ConnectionError, TimeoutError,
                     requests.exceptions.ConnectionError,
